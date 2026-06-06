@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Minha Fatura — Analisador de Faturas</title>
+  <meta name="description" content="Analise sua fatura de cartão de crédito diretamente no navegador. Gastos por portador, transações detalhadas e conciliação automática. 100% privado — nenhum arquivo é enviado a servidores.">
+  <meta name="keywords" content="analisar fatura, fatura cartão, gastos cartão, fatura pdf, privado, gratuito">
+  <meta name="author" content="samuelhgf">
+  <meta name="robots" content="index, follow">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Minha Fatura — Analisador de Faturas">
+  <meta property="og:description" content="Analise sua fatura de cartão direto no navegador. 100% privado — nenhum arquivo é enviado a servidores.">
+  <meta property="og:url" content="https://samuelhgf.github.io/minha-fatura/">
+  <meta property="og:locale" content="pt_BR">
+
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Minha Fatura — Analisador de Faturas">
+  <meta name="twitter:description" content="Analise sua fatura de cartão direto no navegador. 100% privado e gratuito.">
+
+  <link rel="canonical" href="https://samuelhgf.github.io/minha-fatura/">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Minha Fatura",
+    "description": "Analisador de faturas de cartão de crédito com processamento 100% local no navegador.",
+    "url": "https://samuelhgf.github.io/minha-fatura/",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Any",
+    "inLanguage": "pt-BR",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "BRL" },
+    "author": { "@type": "Person", "name": "samuelhgf", "url": "https://github.com/samuelhgf" }
+  }
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+
+  <script>
+    // Apply theme before paint to avoid flash
+    (function() {
+      const stored = localStorage.getItem('theme');
+      if (stored) document.documentElement.setAttribute('data-theme', stored);
+    })();
+  </script>
+</head>
+<body>
+
+<header class="header">
+  <nav class="nav container">
+    <a href="/" class="logo" aria-label="Minha Fatura - início">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      Minha Fatura
+    </a>
+    <div class="nav-actions">
+      <a href="https://github.com/samuelhgf/minha-fatura" class="btn-ghost" target="_blank" rel="noopener noreferrer" aria-label="Ver código no GitHub">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+        GitHub
+      </a>
+      <button class="theme-toggle" id="themeToggle" aria-label="Alternar entre tema claro e escuro">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <svg class="icon-moon hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="hero container">
+    <div class="badge" role="note">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      100% Privado — Nenhum arquivo é enviado a servidores
+    </div>
+    <h1>Analise sua fatura</h1>
+    <p>Visualize gastos por portador, filtre transações e verifique a conciliação — tudo processado localmente no seu navegador.</p>
+  </section>
+
+  <!-- Upload -->
+  <section class="upload-section container" id="uploadSection" aria-label="Envio de fatura">
+    <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Clique ou arraste um PDF aqui">
+      <div class="drop-zone-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="16 16 12 12 8 16"/>
+          <line x1="12" y1="12" x2="12" y2="21"/>
+          <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+        </svg>
+      </div>
+      <h2>Arraste sua fatura aqui</h2>
+      <p>ou</p>
+      <label for="fileInput" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        Selecionar PDF
+      </label>
+      <input type="file" id="fileInput" accept=".pdf" hidden aria-label="Selecionar arquivo PDF da fatura">
+      <p class="file-note">Apenas arquivos .pdf são aceitos</p>
+    </div>
+    <p class="disclaimer-note">⚠️ No momento, apenas compatível com faturas do cartão Santander</p>
+  </section>
+
+  <!-- Processing -->
+  <div class="processing hidden container" id="processing" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Analisando fatura…</p>
+  </div>
+
+  <!-- Error -->
+  <div class="processing hidden container" id="errorBox" role="alert">
+    <p id="errorMsg" style="color:var(--danger);font-weight:600;"></p>
+    <button class="btn-secondary" id="errorRetry" style="margin-top:1rem;">Tentar novamente</button>
+  </div>
+
+  <!-- Results -->
+  <section class="results hidden container" id="results" aria-label="Resultado da análise">
+    <div class="result-header">
+      <h2 id="resultTitle">Fatura analisada</h2>
+      <div class="result-actions">
+        <button class="btn-secondary" id="downloadJson">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Exportar JSON
+        </button>
+        <button class="btn-ghost" id="newFile">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          Nova fatura
+        </button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" role="tab" aria-selected="true" data-tab="summary" id="tab-summary">Resumo</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="transactions" id="tab-transactions">Transações</button>
+    </div>
+
+    <!-- Summary panel -->
+    <div id="summaryPanel" role="tabpanel" aria-labelledby="tab-summary">
+      <div class="cards-grid" id="cardsGrid"></div>
+      <div class="conciliation" id="conciliation"></div>
+    </div>
+
+    <!-- Transactions panel -->
+    <div id="transactionsPanel" class="hidden" role="tabpanel" aria-labelledby="tab-transactions">
+      <div class="filters">
+        <select id="cardFilter" aria-label="Filtrar por cartão">
+          <option value="">Todos os cartões</option>
+        </select>
+        <input type="text" id="descFilter" placeholder="Filtrar por descrição…" aria-label="Filtrar transações por descrição">
+      </div>
+      <div class="table-wrap">
+        <table aria-label="Transações da fatura">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Tipo</th>
+              <th>Descrição</th>
+              <th>Parcelas</th>
+              <th>Portador</th>
+              <th style="text-align:right">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="txBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="how-it-works" aria-label="Como funciona">
+    <div class="container">
+      <h2>Como funciona</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-icon" aria-hidden="true">1</div>
+          <h3>Selecione sua fatura</h3>
+          <p>Selecione ou arraste o arquivo da sua fatura.</p>
+        </div>
+        <div class="step">
+          <div class="step-icon" aria-hidden="true">2</div>
+          <h3>Processamento local</h3>
+          <p>Seu arquivo é lido e analisado diretamente no navegador, sem sair do seu dispositivo.</p>
+        </div>
+        <div class="step">
+          <div class="step-icon" aria-hidden="true">3</div>
+          <h3>Visualize e exporte</h3>
+          <p>Analise os gastos por portador, filtre transações e exporte os dados em JSON.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sponsors -->
+  <section class="sponsors" id="apoie" aria-label="Apoie o projeto">
+    <div class="container">
+      <h2>Apoie o projeto</h2>
+      <p>Este projeto é gratuito e open source. Se ele te ajudou, considere apoiar o desenvolvimento:</p>
+      <div class="sponsor-links">
+        <a href="https://github.com/sponsors/samuelhgf" class="sponsor-btn" target="_blank" rel="noopener noreferrer" aria-label="Apoiar via GitHub Sponsors">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          GitHub Sponsors
+        </a>
+        <a href="https://buymeacoffee.com/samuelhgf" class="sponsor-btn" target="_blank" rel="noopener noreferrer" aria-label="Apoiar via Buy Me a Coffee">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+            <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+          </svg>
+          Buy Me a Coffee
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer" role="contentinfo">
+  <div class="container">
+    <p>Feito com ♥ por <a href="https://github.com/samuelhgf" target="_blank" rel="noopener noreferrer">samuelhgf</a></p>
+    <nav class="footer-links" aria-label="Links do rodapé">
+      <a href="privacy.html">Privacidade</a>
+      <a href="terms.html">Termos</a>
+      <a href="https://github.com/samuelhgf/minha-fatura" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://github.com/sponsors/samuelhgf" target="_blank" rel="noopener noreferrer">Sponsors</a>
+    </nav>
+  </div>
+</footer>
+
+<!-- Cookie consent banner -->
+<div id="cookieBanner" class="cookie-banner hidden" role="dialog" aria-label="Consentimento de cookies">
+  <p class="cookie-text">
+    Usamos o Google Analytics para entender como o site é utilizado. Nenhum dado da sua fatura é coletado.
+    <a href="privacy.html">Política de Privacidade</a>
+  </p>
+  <div class="cookie-actions">
+    <button id="cookieAccept" class="btn-primary btn-sm">Aceitar</button>
+    <button id="cookieDecline" class="btn-outline btn-sm">Recusar</button>
+  </div>
+</div>
+
+<!-- Google Analytics (loaded only after consent) -->
+<script>
+  const GA_ID = 'G-N7K246Y0ZV';
+
+  function loadGA() {
+    const s = document.createElement('script');
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_ID;
+    s.async = true;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    window.gtag = gtag;
+    gtag('js', new Date());
+    gtag('config', GA_ID);
+  }
+
+  (function initConsent() {
+    if (localStorage.getItem('cookie_consent') === 'accepted') { loadGA(); return; }
+    document.getElementById('cookieBanner').classList.remove('hidden');
+  })();
+
+  document.getElementById('cookieAccept').addEventListener('click', function () {
+    localStorage.setItem('cookie_consent', 'accepted');
+    document.getElementById('cookieBanner').classList.add('hidden');
+    loadGA();
+  });
+
+  document.getElementById('cookieDecline').addEventListener('click', function () {
+    document.getElementById('cookieBanner').classList.add('hidden');
+  });
+</script>
+
+<!-- UserJot feedback widget -->
+<script>window.$ujq=window.$ujq||[];window.uj=window.uj||new Proxy({},{get:(_,p)=>(...a)=>window.$ujq.push([p,...a])});document.head.appendChild(Object.assign(document.createElement('script'),{src:'https://cdn.userjot.com/sdk/v2/uj.js',type:'module',async:!0}));</script>
+<script>
+  window.uj.init('cmq2p5em72y1x0ipjppwok61i', {
+    widget: true,
+    position: 'right',
+    theme: 'auto'
+  });
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
+<script src="parser.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

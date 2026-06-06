@@ -11,6 +11,6 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "pdf-parse": "^2.4.5"
+    "pdfjs-dist": "^3.11.174"
   }
 }
