@@ -230,7 +230,7 @@
         }
 
         const tx = parseTransactionLine(line);
-        if (tx && tx.description !== 'PAGAMENTO DE FATURA')
+        if (tx && !tx.description.includes('PAGAMENTO DE FATURA'))
           statement.cards[currentCard].transactions.push(tx);
       }
     }
@@ -262,7 +262,7 @@
   function isSantanderStatement(pages) {
     const lines = pages.flatMap(p => p.lines);
     return (
-      lines.some(l => l === 'Detalhamento da Fatura') &&
+      lines.some(l => l.includes('Detalhamento da Fatura')) &&
       lines.some(l => CARD_LINE_RE.test(l)) &&
       lines.some(l => TOTAL_SPENT_RE.test(l))
     );
