@@ -222,6 +222,49 @@ body {
   margin-top: 1rem;
 }
 
+/* ─── History ────────────────────────────────────────────── */
+.history-section {
+  padding: 0 1.25rem 3rem;
+}
+.history-title {
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: .75rem;
+}
+.history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem 1rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: .5rem;
+}
+.history-info {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  min-width: 0;
+}
+.history-label {
+  font-weight: 600;
+  font-size: .9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history-date {
+  font-size: .75rem;
+  color: var(--muted);
+}
+.history-actions { display: flex; gap: .4rem; flex-shrink: 0; }
+.history-delete-confirm { border-color: var(--danger) !important; color: var(--danger) !important; }
+
 /* ─── Processing ─────────────────────────────────────────── */
 .processing {
   display: flex;

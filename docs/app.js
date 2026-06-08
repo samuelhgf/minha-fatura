@@ -140,6 +140,120 @@ function esc(str) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ─── History (localStorage) ───────────────────────────────────────────────────
+const HISTORY_KEY = 'minha_fatura_history';
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+  catch { return []; }
+}
+
+function statementFingerprint(statement) {
+  const txCount = Object.values(statement.cards).reduce((a, c) => a + c.transactions.length, 0);
+  const raw = [statement.total_spent, statement.total_foreign_spent, statement.total_credits, txCount].join('|');
+  return btoa(raw);
+}
+
+function historyLabel(statement) {
+  const total = statement.total_spent + statement.total_foreign_spent - statement.total_credits;
+  const n = Object.keys(statement.cards).length;
+  return `${StatementParser.formatBRL(total)} · ${n} portador${n !== 1 ? 'es' : ''}`;
+}
+
+function saveStatementToHistory(statement) {
+  try {
+    const fp = statementFingerprint(statement);
+    const items = getHistory();
+    if (items.some(i => i.fp === fp)) {
+      const btn = document.getElementById('saveStatement');
+      btn.disabled = true;
+      const original = btn.innerHTML;
+      btn.innerHTML = '⚠ Já salvo';
+      setTimeout(() => { btn.disabled = false; btn.innerHTML = original; }, 1500);
+      return;
+    }
+    items.unshift({ id: Date.now().toString(), fp, savedAt: new Date().toISOString(), label: historyLabel(statement), statement });
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+    renderHistory();
+    const btn = document.getElementById('saveStatement');
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = '✓ Salvo';
+    setTimeout(() => { btn.hidden = true; btn.disabled = false; btn.innerHTML = original; }, 1200);
+  } catch (e) {
+    console.error('Erro ao salvar:', e);
+  }
+}
+
+function deleteHistoryItem(id) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(getHistory().filter(i => i.id !== id)));
+  renderHistory();
+}
+
+function renderHistory() {
+  const section = document.getElementById('historySection');
+  const list    = document.getElementById('historyList');
+  const items   = getHistory();
+  if (!items.length) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  list.innerHTML = items.map(item => `
+    <div class="history-item">
+      <div class="history-info">
+        <span class="history-label">${esc(item.label)}</span>
+        <span class="history-date">${new Date(item.savedAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+      </div>
+      <div class="history-actions">
+        <button class="btn-secondary btn-sm history-load" data-id="${item.id}">Abrir</button>
+        <button class="btn-ghost btn-sm history-delete" data-id="${item.id}" aria-label="Remover">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.history-load').forEach(btn =>
+    btn.addEventListener('click', () => {
+      const item = getHistory().find(i => i.id === btn.dataset.id);
+      if (item) openSavedStatement(item.statement);
+    })
+  );
+  list.querySelectorAll('.history-delete').forEach(btn => {
+    let timer = null;
+    btn.addEventListener('click', () => {
+      if (btn.dataset.confirm === 'true') {
+        clearTimeout(timer);
+        deleteHistoryItem(btn.dataset.id);
+      } else {
+        btn.dataset.confirm = 'true';
+        btn.classList.add('history-delete-confirm');
+        btn.setAttribute('aria-label', 'Confirmar remoção');
+        btn.innerHTML = '<span>Confirmar?</span>';
+        timer = setTimeout(() => {
+          btn.dataset.confirm = '';
+          btn.classList.remove('history-delete-confirm');
+          btn.setAttribute('aria-label', 'Remover');
+          btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+        }, 3000);
+      }
+    });
+  });
+}
+
+function openSavedStatement(statement) {
+  currentStatement = statement;
+  hide('uploadSection');
+  hide('errorBox');
+  show('results');
+  document.getElementById('resultTitle').textContent =
+    `Fatura analisada — ${Object.keys(statement.cards).length} portador(es)`;
+  renderSummary(statement);
+  populateCardFilter(statement);
+  renderTransactions(statement);
+  document.getElementById('saveStatement').hidden = true;
+}
+
 // ─── File handling ────────────────────────────────────────────────────────────
 function show(id) { document.getElementById(id).classList.remove('hidden'); }
 function hide(id) { document.getElementById(id).classList.add('hidden'); }
@@ -167,6 +281,8 @@ async function handleFile(file) {
     renderSummary(statement);
     populateCardFilter(statement);
     renderTransactions(statement);
+    document.getElementById('saveStatement').hidden =
+      !(statement.z_reconciliation && statement.z_reconciliation_transactions_sum);
   } catch (err) {
     hide('processing');
     if (err.message === 'invalid_statement') {
@@ -263,5 +379,11 @@ document.getElementById('downloadJson').addEventListener('click', () => {
   URL.revokeObjectURL(a.href);
 });
 
+document.getElementById('saveStatement').addEventListener('click', () => {
+  if (currentStatement) saveStatementToHistory(currentStatement);
+});
+
 document.getElementById('newFile').addEventListener('click', reset);
 document.getElementById('errorRetry').addEventListener('click', reset);
+
+renderHistory();
