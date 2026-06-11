@@ -36,7 +36,8 @@ async function parseStatement(file) {
 // ─── UI rendering ─────────────────────────────────────────────────────────────
 let currentStatement = null;
 
-function renderSummary(statement) {
+function renderSummary(statement, opts = {}) {
+  const shared = !!opts.shared;
   const grid = document.getElementById('cardsGrid');
   const concilEl = document.getElementById('conciliation');
   const cards = Object.values(statement.cards);
@@ -48,9 +49,13 @@ function renderSummary(statement) {
 
   cards.forEach(card => {
     const el = document.createElement('article');
-    el.className = 'card';
+    el.className = 'card card-clickable';
+    el.setAttribute('role', 'button');
+    el.setAttribute('tabindex', '0');
+    el.dataset.lastFour = card.last_four;
     el.innerHTML = `
       <div class="card-header">
+        ${shared ? '' : `<input type="checkbox" class="card-select" data-last-four="${esc(card.last_four)}" aria-label="Selecionar cartão ${esc(card.name)} para compartilhar">`}
         <span class="card-name">${esc(card.name)}</span>
         <span class="card-last-four">···${esc(card.last_four)}</span>
       </div>
@@ -61,7 +66,10 @@ function renderSummary(statement) {
   });
 
   const totalEl = document.createElement('article');
-  totalEl.className = 'card total-card';
+  totalEl.className = 'card total-card card-clickable';
+  totalEl.setAttribute('role', 'button');
+  totalEl.setAttribute('tabindex', '0');
+  totalEl.dataset.lastFour = '';
   totalEl.innerHTML = `
     <div class="card-header">
       <span class="card-name">Total</span>
@@ -71,6 +79,17 @@ function renderSummary(statement) {
     <div class="card-tx-count">${cards.reduce((a, c) => a + c.transactions.length, 0)} transações</div>
   `;
   grid.appendChild(totalEl);
+
+  if (shared) {
+    concilEl.classList.add('hidden');
+    concilEl.innerHTML = '';
+    return;
+  }
+  concilEl.classList.remove('hidden');
+
+  // Fresh selection state on every (re)render of the summary.
+  hide('shareBox');
+  updateShareButton();
 
   const expected = statement.total_spent + statement.total_foreign_spent - statement.total_credits;
 
@@ -106,10 +125,21 @@ function renderTransactions(statement, cardFilter = '', descFilter = '') {
     }
   }
 
+  const foot = document.getElementById('txFoot');
+
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="tx-empty">Nenhuma transação encontrada.</td></tr>`;
+    foot.classList.add('hidden');
     return;
   }
+
+  const total = Math.round(rows.reduce((a, tx) => a + tx.value, 0) * 100) / 100;
+  foot.querySelector('.tx-foot-label').textContent =
+    `${rows.length} transaç${rows.length === 1 ? 'ão' : 'ões'}`;
+  const totalCell = foot.querySelector('.tx-foot-total');
+  totalCell.textContent = StatementParser.formatBRL(total);
+  totalCell.classList.toggle('negative', total < 0);
+  foot.classList.remove('hidden');
 
   tbody.innerHTML = rows.map(tx => `
     <tr>
@@ -138,6 +168,53 @@ function esc(str) {
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ─── Share links (cards encoded in the URL) ─────────────────────────────────────
+// UTF-8-safe base64 so accented cardholder names (e.g. "JOÃO") don't break btoa.
+function encodeShare(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+
+function decodeShare(str) {
+  const bin = atob(str);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function getSelectedLastFours() {
+  return [...document.querySelectorAll('.card-select:checked')].map(c => c.dataset.lastFour);
+}
+
+function updateShareButton() {
+  const btn = document.getElementById('shareCards');
+  if (btn) btn.disabled = getSelectedLastFours().length === 0;
+}
+
+function buildSharePayload(lastFours) {
+  const cards = {};
+  for (const lf of lastFours) {
+    const c = currentStatement && currentStatement.cards[lf];
+    if (!c) continue;
+    cards[lf] = {
+      name: c.name,
+      last_four: c.last_four,
+      transactions: c.transactions,
+      transactions_sum: c.transactions_sum,
+    };
+  }
+  return { v: 1, cards };
+}
+
+function openCardTransactions(lastFour) {
+  if (!currentStatement) return;
+  switchTab('transactions');
+  const sel = document.getElementById('cardFilter');
+  sel.value = lastFour || '';
+  renderTransactions(currentStatement, sel.value, document.getElementById('descFilter').value);
 }
 
 // ─── History (localStorage) ───────────────────────────────────────────────────
@@ -252,6 +329,20 @@ function openSavedStatement(statement) {
   populateCardFilter(statement);
   renderTransactions(statement);
   document.getElementById('saveStatement').hidden = true;
+}
+
+function openSharedStatement(statement) {
+  currentStatement = statement;
+  document.body.classList.add('shared-mode');
+  hide('uploadSection');
+  hide('errorBox');
+  hide('historySection');
+  show('results');
+  show('sharedBanner');
+  document.getElementById('resultTitle').textContent = 'Cartões compartilhados';
+  renderSummary(statement, { shared: true });
+  populateCardFilter(statement);
+  renderTransactions(statement);
 }
 
 // ─── File handling ────────────────────────────────────────────────────────────
@@ -386,4 +477,74 @@ document.getElementById('saveStatement').addEventListener('click', () => {
 document.getElementById('newFile').addEventListener('click', reset);
 document.getElementById('errorRetry').addEventListener('click', reset);
 
-renderHistory();
+// ─── Card grid: click a card → its transactions; checkboxes → share selection ───
+const cardsGrid = document.getElementById('cardsGrid');
+
+cardsGrid.addEventListener('click', e => {
+  if (e.target.closest('.card-select')) return;
+  const card = e.target.closest('.card-clickable');
+  if (card) openCardTransactions(card.dataset.lastFour);
+});
+
+cardsGrid.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  if (e.target.closest('.card-select')) return;
+  const card = e.target.closest('.card-clickable');
+  if (!card) return;
+  e.preventDefault();
+  openCardTransactions(card.dataset.lastFour);
+});
+
+cardsGrid.addEventListener('change', e => {
+  if (e.target.classList.contains('card-select')) updateShareButton();
+});
+
+// ─── Share ──────────────────────────────────────────────────────────────────────
+function flashButton(btn, label) {
+  const original = btn.textContent;
+  btn.textContent = label;
+  btn.disabled = true;
+  setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1500);
+}
+
+document.getElementById('shareCards').addEventListener('click', () => {
+  const selected = getSelectedLastFours();
+  if (!selected.length || !currentStatement) return;
+  const payload = buildSharePayload(selected);
+  const url = location.origin + location.pathname + '?s=' + encodeURIComponent(encodeShare(payload));
+  document.getElementById('shareUrl').value = url;
+  show('shareBox');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url)
+      .then(() => flashButton(document.getElementById('shareCopy'), '✓ Copiado!'))
+      .catch(() => {});
+  }
+});
+
+document.getElementById('shareCopy').addEventListener('click', () => {
+  const input = document.getElementById('shareUrl');
+  input.select();
+  const copy = () => flashButton(document.getElementById('shareCopy'), '✓ Copiado!');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(input.value).then(copy).catch(copy);
+  } else {
+    document.execCommand('copy');
+    copy();
+  }
+});
+
+// ─── Bootstrap: shared link or normal history ───────────────────────────────────
+(function initShare() {
+  const shared = new URLSearchParams(location.search).get('s');
+  if (!shared) { renderHistory(); return; }
+  try {
+    const statement = decodeShare(shared);
+    if (!statement || !statement.cards || !Object.keys(statement.cards).length) {
+      throw new Error('empty_share');
+    }
+    openSharedStatement(statement);
+  } catch (err) {
+    console.error('Link de compartilhamento inválido:', err);
+    renderHistory();
+  }
+})();
