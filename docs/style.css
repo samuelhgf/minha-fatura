@@ -608,6 +608,17 @@ tr:hover td { background: var(--bg); }
   color: var(--muted);
 }
 
+tfoot td {
+  background: var(--bg-2);
+  border-top: 2px solid var(--border);
+  border-bottom: none;
+  font-weight: 600;
+}
+tfoot tr:hover td { background: var(--bg-2); }
+.tx-foot-label { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+.tx-foot-total { font-family: var(--mono); text-align: right; white-space: nowrap; color: var(--accent); }
+.tx-foot-total.negative { color: var(--muted); }
+
 /* ─── How it works ───────────────────────────────────────── */
 .how-it-works {
   padding: 4rem 1.25rem;

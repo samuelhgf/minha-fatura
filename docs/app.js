@@ -125,10 +125,21 @@ function renderTransactions(statement, cardFilter = '', descFilter = '') {
     }
   }
 
+  const foot = document.getElementById('txFoot');
+
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="tx-empty">Nenhuma transação encontrada.</td></tr>`;
+    foot.classList.add('hidden');
     return;
   }
+
+  const total = Math.round(rows.reduce((a, tx) => a + tx.value, 0) * 100) / 100;
+  foot.querySelector('.tx-foot-label').textContent =
+    `${rows.length} transaç${rows.length === 1 ? 'ão' : 'ões'}`;
+  const totalCell = foot.querySelector('.tx-foot-total');
+  totalCell.textContent = StatementParser.formatBRL(total);
+  totalCell.classList.toggle('negative', total < 0);
+  foot.classList.remove('hidden');
 
   tbody.innerHTML = rows.map(tx => `
     <tr>
