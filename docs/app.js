@@ -171,18 +171,13 @@ function esc(str) {
 }
 
 // ─── Share links (cards encoded in the URL) ─────────────────────────────────────
-// UTF-8-safe base64 so accented cardholder names (e.g. "JOÃO") don't break btoa.
+// lz-string keeps the link short and is UTF-8 safe (accented names like "JOÃO" work).
 function encodeShare(obj) {
-  const bytes = new TextEncoder().encode(JSON.stringify(obj));
-  let bin = '';
-  bytes.forEach(b => bin += String.fromCharCode(b));
-  return btoa(bin);
+  return LZString.compressToEncodedURIComponent(JSON.stringify(obj));
 }
 
 function decodeShare(str) {
-  const bin = atob(str);
-  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-  return JSON.parse(new TextDecoder().decode(bytes));
+  return JSON.parse(LZString.decompressFromEncodedURIComponent(str));
 }
 
 function getSelectedLastFours() {
