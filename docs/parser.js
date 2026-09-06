@@ -98,6 +98,7 @@
   const TOTAL_FOREIGN_SPENT_RE = /^\(\+\) Total Despesas\/Débitos no Exterior/;
   const SKIP_RE                = /^(Pagamento e Demais Créditos|Despesas|Parcelamentos|Compra\s+Data|Detalhamento da Fatura|Resumo da Fatura|Descrição|\d+\/\d+$)/;
   const BR_VALUE_RE            = /^-?[\d.]+,\d{2}$/;
+  const TRANSACTION_VALUE_RE   = /^(-?[\d.]+,\d{2})(?:\s+-?[\d.]+,\d{2})?$/;
   const FOREIGN_CURR_RE        = /^-?[\d.]+,\d{2}\s+[A-Za-z]+$/;
 
   function parseBrazilianNumber(str) {
@@ -134,23 +135,23 @@
       return null;
     }
 
-    // Collect tab-split description fragments (e.g. "SHEIN" + "*SHEINCOM")
+    // Collect tab-split description fragments (e.g. "EXAMPLE" + "STORE")
     while (
       i < parts.length &&
       !/^\d{2}\/\d{2}$/.test(parts[i]) &&
       !FOREIGN_CURR_RE.test(parts[i]) &&
-      !BR_VALUE_RE.test(parts[i])
+      !TRANSACTION_VALUE_RE.test(parts[i])
     ) {
       description += ' ' + parts[i]; i++;
     }
 
     let installments = null;
     if (i < parts.length && /^\d{2}\/\d{2}$/.test(parts[i])) { installments = parts[i]; i++; }
-    // Skip foreign currency amount (e.g. "27,33 EURO") — take only the BRL value
+    // Skip foreign currency amount (e.g. "20,00 EURO") — take only the BRL value
     if (i < parts.length && FOREIGN_CURR_RE.test(parts[i])) i++;
     if (i >= parts.length) return null;
-    // Accept "173,51 31,72" (BRL + space-joined USD): extract just the BRL part
-    const valueMatch = parts[i].match(/^(-?[\d.]+,\d{2})/);
+    // Accept "123,45 22,50" (BRL + space-joined USD): extract just the BRL part
+    const valueMatch = parts[i].match(TRANSACTION_VALUE_RE);
     if (!valueMatch) return null;
 
     return {
