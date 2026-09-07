@@ -235,6 +235,12 @@ function openCardTransactions(lastFour) {
   const sel = document.getElementById('cardFilter');
   sel.value = lastFour || '';
   renderTransactions(currentStatement, sel.value, document.getElementById('descFilter').value);
+  requestAnimationFrame(() => {
+    document.querySelector('.tabs').scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start',
+    });
+  });
 }
 
 // ─── History (localStorage) ───────────────────────────────────────────────────
@@ -458,6 +464,10 @@ dropZone.addEventListener('drop', e => {
 
 document.querySelectorAll('.tab').forEach(tab =>
   tab.addEventListener('click', () => {
+    if (tab.dataset.tab === 'summary') {
+      document.getElementById('cardFilter').value = '';
+      document.getElementById('descFilter').value = '';
+    }
     switchTab(tab.dataset.tab);
     if (tab.dataset.tab === 'transactions' && currentStatement)
       renderTransactions(currentStatement,
