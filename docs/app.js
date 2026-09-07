@@ -36,6 +36,25 @@ async function parseStatement(file) {
 // ─── UI rendering ─────────────────────────────────────────────────────────────
 let currentStatement = null;
 
+function copyableCurrencyValue(value) {
+  return StatementParser.formatBRL(value).replace('R$ ', '');
+}
+
+function copyValueButton(value) {
+  const formattedValue = copyableCurrencyValue(value);
+  return `
+    <button type="button" class="card-copy" data-copy-value="${esc(formattedValue)}" aria-label="Copiar valor ${esc(formattedValue)}">
+      <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+      </svg>
+      <svg class="copied-icon hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m5 12 4 4L19 6"></path>
+      </svg>
+      <span class="card-copy-label" aria-live="polite">Copiar</span>
+    </button>`;
+}
+
 function renderSummary(statement, opts = {}) {
   const shared = !!opts.shared;
   const grid = document.getElementById('cardsGrid');
@@ -59,7 +78,10 @@ function renderSummary(statement, opts = {}) {
         <span class="card-name">${esc(card.name)}</span>
         <span class="card-last-four">···${esc(card.last_four)}</span>
       </div>
-      <div class="card-value">${StatementParser.formatBRL(card.transactions_sum)}</div>
+      <div class="card-value-row">
+        <div class="card-value">${StatementParser.formatBRL(card.transactions_sum)}</div>
+        ${copyValueButton(card.transactions_sum)}
+      </div>
       <div class="card-tx-count">${card.transactions.length} transaç${card.transactions.length === 1 ? 'ão' : 'ões'}</div>
     `;
     grid.appendChild(el);
@@ -75,7 +97,10 @@ function renderSummary(statement, opts = {}) {
       <span class="card-name">Total</span>
       <span class="card-last-four">${cards.length} cartões</span>
     </div>
-    <div class="card-value">${StatementParser.formatBRL(cardsTotal)}</div>
+    <div class="card-value-row">
+      <div class="card-value">${StatementParser.formatBRL(cardsTotal)}</div>
+      ${copyValueButton(cardsTotal)}
+    </div>
     <div class="card-tx-count">${cards.reduce((a, c) => a + c.transactions.length, 0)} transações</div>
   `;
   grid.appendChild(totalEl);
@@ -474,8 +499,59 @@ document.getElementById('errorRetry').addEventListener('click', reset);
 
 // ─── Card grid: click a card → its transactions; checkboxes → share selection ───
 const cardsGrid = document.getElementById('cardsGrid');
+const copyResetTimers = new WeakMap();
 
-cardsGrid.addEventListener('click', e => {
+async function writeToClipboard(value) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) throw new Error('copy_failed');
+}
+
+function showCopiedState(btn) {
+  const previousTimer = copyResetTimers.get(btn);
+  if (previousTimer) clearTimeout(previousTimer);
+
+  btn.classList.add('is-copied');
+  btn.querySelector('.copy-icon').classList.add('hidden');
+  btn.querySelector('.copied-icon').classList.remove('hidden');
+  btn.querySelector('.card-copy-label').textContent = 'Copiado';
+  btn.setAttribute('aria-label', 'Valor copiado');
+
+  const timer = setTimeout(() => {
+    btn.classList.remove('is-copied');
+    btn.querySelector('.copy-icon').classList.remove('hidden');
+    btn.querySelector('.copied-icon').classList.add('hidden');
+    btn.querySelector('.card-copy-label').textContent = 'Copiar';
+    btn.setAttribute('aria-label', `Copiar valor ${btn.dataset.copyValue}`);
+    copyResetTimers.delete(btn);
+  }, 1800);
+  copyResetTimers.set(btn, timer);
+}
+
+cardsGrid.addEventListener('click', async e => {
+  const copyButton = e.target.closest('.card-copy');
+  if (copyButton) {
+    e.stopPropagation();
+    try {
+      await writeToClipboard(copyButton.dataset.copyValue);
+      showCopiedState(copyButton);
+    } catch (err) {
+      console.error('Não foi possível copiar o valor:', err);
+    }
+    return;
+  }
   if (e.target.closest('.card-select')) return;
   const card = e.target.closest('.card-clickable');
   if (card) openCardTransactions(card.dataset.lastFour);
@@ -483,7 +559,7 @@ cardsGrid.addEventListener('click', e => {
 
 cardsGrid.addEventListener('keydown', e => {
   if (e.key !== 'Enter' && e.key !== ' ') return;
-  if (e.target.closest('.card-select')) return;
+  if (e.target.closest('.card-select, .card-copy')) return;
   const card = e.target.closest('.card-clickable');
   if (!card) return;
   e.preventDefault();
