@@ -878,9 +878,10 @@ tfoot tr:hover td { background: var(--bg-2); }
     padding: .6rem .75rem;
   }
   .result-actions .btn-ghost {
-    border: 1px solid var(--border);
+    background: var(--border);
     color: var(--text);
   }
+  .result-actions .btn-ghost:hover { background: var(--bg-2); }
   .cards-grid { grid-template-columns: minmax(0, 1fr); }
   .card-value { font-size: clamp(1.25rem, 7vw, 1.5rem); overflow-wrap: anywhere; }
 }
