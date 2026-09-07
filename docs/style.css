@@ -382,6 +382,35 @@ body {
   color: var(--accent);
 }
 
+.card-value-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  min-width: 0;
+}
+
+.card-copy {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  min-height: 32px;
+  padding: .35rem .55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: .75rem;
+  font-weight: 600;
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+}
+.card-copy:hover { color: var(--accent); border-color: var(--accent); }
+.card-copy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card-copy.is-copied { color: var(--accent); background: var(--accent-bg); border-color: var(--accent); }
+.card-copy svg { flex: 0 0 auto; }
+
 .card-tx-count {
   font-size: .8rem;
   color: var(--muted);
@@ -397,6 +426,9 @@ body {
 .total-card .card-value { color: #fff; }
 .total-card .card-last-four { background: rgba(255,255,255,.2); color: #fff; }
 .total-card .card-tx-count { color: rgba(255,255,255,.7); }
+.total-card .card-copy { background: rgba(255,255,255,.14); border-color: rgba(255,255,255,.35); color: #fff; }
+.total-card .card-copy:hover { background: rgba(255,255,255,.22); border-color: #fff; }
+.total-card .card-copy.is-copied { background: #fff; border-color: #fff; color: var(--accent); }
 
 /* Clickable cards + share selection */
 .card-clickable { cursor: pointer; }
@@ -831,4 +863,6 @@ tfoot tr:hover td { background: var(--bg-2); }
   .filters select { min-width: unset; width: 100%; }
   .footer .container { flex-direction: column; text-align: center; }
   .result-header { flex-direction: column; }
+  .cards-grid { grid-template-columns: minmax(0, 1fr); }
+  .card-value { font-size: clamp(1.25rem, 7vw, 1.5rem); overflow-wrap: anywhere; }
 }
