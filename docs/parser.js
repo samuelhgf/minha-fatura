@@ -99,7 +99,8 @@
   const SKIP_RE                = /^(Pagamento e Demais Créditos|Despesas|Parcelamentos|Compra\s+Data|Detalhamento da Fatura|Resumo da Fatura|Descrição|\d+\/\d+$)/;
   const BR_VALUE_RE            = /^-?[\d.]+,\d{2}$/;
   const TRANSACTION_VALUE_RE   = /^(-?[\d.]+,\d{2})(?:\s+-?[\d.]+,\d{2})?$/;
-  const FOREIGN_CURR_RE        = /^-?[\d.]+,\d{2}\s+[A-Za-z]+$/;
+  const INSTALLMENT_VALUE_RE   = /^(\d{2}\/\d{2})\s+(-?[\d.]+,\d{2}(?:\s+-?[\d.]+,\d{2})?)$/;
+  const FOREIGN_CURR_RE        = /^-?[\d.]+,\d{2}\s+[A-Za-z]+(?:[.\s]+[A-Za-z]+)*\.?$/;
 
   function parseBrazilianNumber(str) {
     const negative = str.startsWith('-');
@@ -114,7 +115,12 @@
   }
 
   function parseTransactionLine(line) {
-    const parts = line.split('\t').map(p => p.trim()).filter(Boolean);
+    // PDF extraction can join the installment and value into one tab field.
+    const parts = line.split('\t').map(p => p.trim()).filter(Boolean)
+      .flatMap(part => {
+        const match = part.match(INSTALLMENT_VALUE_RE);
+        return match ? [match[1], match[2]] : [part];
+      });
     let i = 0, typeDigit = null;
 
     // Type digit may be its own tab field ("3\t17/02 …") or merged with the date ("3 17/02 …")
@@ -147,7 +153,9 @@
 
     let installments = null;
     if (i < parts.length && /^\d{2}\/\d{2}$/.test(parts[i])) { installments = parts[i]; i++; }
-    // Skip foreign currency amount (e.g. "20,00 EURO") — take only the BRL value
+    // Currency labels may be codes, names or truncated abbreviations with dots
+    // (e.g. "20,00 AED", "20,00 RIAL DE CATAR", "20,00 DIRHAM EMI.AR").
+    // Skip the original amount and take only the following BRL value.
     if (i < parts.length && FOREIGN_CURR_RE.test(parts[i])) i++;
     if (i >= parts.length) return null;
     // Accept "123,45 22,50" (BRL + space-joined USD): extract just the BRL part
